@@ -6,7 +6,7 @@
 
 #ifndef CONFIG_H_
 #define CONFIG_H_
-
+#include <stdint.h>
 #include <pthread.h>
 #include <mqueue.h>
 #include <semaphore.h>
