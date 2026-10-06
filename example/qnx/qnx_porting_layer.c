@@ -5,14 +5,14 @@
  */
 
 #include "porting_layer.h"
-
+#include <sys/neutrino.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
-
+uint64_t runmask = 0x01;   /* CPU 2*/
 #ifdef TRACING
 #include "tracing/tp.h"
 #endif
@@ -38,7 +38,7 @@ static inline void tsnorm(struct timespec *ts);
 void no_initialize_test(no_task_entry_t init_function)
 {
 	struct sched_param sched_param;
-	cpu_set_t cpuset;
+//cpu_set_t cpuset;
 
 	/* seed */
 	srand(time(0));
@@ -49,14 +49,16 @@ void no_initialize_test(no_task_entry_t init_function)
 	thread_count_limit = BASE_THREAD_COUNT;
 
 	/* Allocate sem pool */
-	CPU_ZERO(&cpuset);
-	CPU_SET(NO_AFFINITY, &cpuset);
-	printf("setting up affinity %d\n", NO_AFFINITY);
+//CPU_ZERO(&cpuset);
+//CPU_SET(NO_AFFINITY, &cpuset);
+printf("setting 8888up runmask %llu\n",
+       (unsigned long long)runmask);
 
-	if (sched_setaffinity(0, sizeof(cpuset), &cpuset) != 0) {
-		no_serial_write("Sched set affinity failed.\n");
-		return;
-	}
+if (ThreadCtl(_NTO_TCTL_RUNMASK, (void *)runmask) == -1) {
+    perror("ThreadCtl");
+    no_serial_write("Thread runmask failed.");
+    return;
+}
 
 	char* prio_env = getenv("NO_PRIO");
 	int prio = BASE_PRIO;
@@ -75,11 +77,11 @@ void no_initialize_test(no_task_entry_t init_function)
 
 	/* Init test */
 	init_function(NULL);
-
+    int sig;
 	sigset_t set;
 	sigemptyset(&set);
 	sigaddset(&set, SIGINT);
-	sigwait(&set, NULL);
+	sigwait(&set, &sig);
 }
 
 no_task_handle_t no_create_task(no_task_entry_t task_entry, char task_name[4], unsigned int prio)
@@ -203,6 +205,10 @@ long no_time_diff(const no_time_t* t1, const no_time_t* t2)
 	/*printf("nsec t2 - t1; %ld - %ld\n", t2->tv_nsec, t1->tv_nsec);
 	printf("sec t2 - t1; %ld - %ld", t2->tv_sec, t1->tv_sec);
 	printf("final diff=%ld\n", diff);*/
+	if (diff < 0)
+	{
+		diff = -diff;
+	}
 	return diff;
 }
 

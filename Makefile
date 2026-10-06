@@ -1,3 +1,8 @@
+
+ifeq ($(shell uname -s),QNX)
+EXAMPLE = qnx
+endif
+
 ifndef EXAMPLE
 EXAMPLE = linux
 endif
